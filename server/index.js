@@ -13,6 +13,7 @@ const { errorHandler } = require('./middleware/errorHandler');
 const portfolioRoutes = require('./routes/portfolio');
 const projectRoutes = require('./routes/projects');
 const contactRoutes = require('./routes/contact');
+const chatRoutes = require('./routes/chat');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -91,6 +92,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/portfolio', portfolioRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/chat', chatRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

@@ -28,10 +28,6 @@ const contactSchema = new mongoose.Schema({
       type: String,
       required: true,
       trim: true
-    },
-    icon: {
-      type: String,
-      default: null
     }
   }]
 }, {

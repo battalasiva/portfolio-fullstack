@@ -1,6 +1,29 @@
 const express = require('express');
 const router = express.Router();
 const Project = require('../models/Project');
+const upload = require('../middleware/upload');
+const { deleteFile } = require('../utils/fileHelper');
+
+// Image upload endpoint
+router.post('/upload', upload.single('image'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'No image file provided' 
+      });
+    }
+    
+    const imageUrl = `/uploads/${req.file.filename}`;
+    res.json({ 
+      success: true, 
+      imageUrl,
+      message: 'Image uploaded successfully'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 
 // GET all projects with filtering and sorting
 router.get('/', async (req, res) => {
@@ -75,18 +98,25 @@ router.post('/', async (req, res) => {
 // UPDATE project
 router.put('/:id', async (req, res) => {
   try {
-    const project = await Project.findByIdAndUpdate(
-      req.params.id, 
-      req.body, 
-      { new: true, runValidators: true }
-    );
+    const oldProject = await Project.findById(req.params.id);
     
-    if (!project) {
+    if (!oldProject) {
       return res.status(404).json({ 
         success: false, 
         message: 'Project not found' 
       });
     }
+    
+    // If image is being updated and old image exists, delete old image
+    if (req.body.image && req.body.image !== oldProject.image && oldProject.image.startsWith('/uploads/')) {
+      deleteFile(oldProject.image);
+    }
+    
+    const project = await Project.findByIdAndUpdate(
+      req.params.id, 
+      req.body, 
+      { new: true, runValidators: true }
+    );
     
     res.json({ success: true, data: project });
   } catch (error) {
@@ -103,13 +133,22 @@ router.put('/:id', async (req, res) => {
 // DELETE project
 router.delete('/:id', async (req, res) => {
   try {
-    const project = await Project.findByIdAndDelete(req.params.id);
+    const project = await Project.findById(req.params.id);
+    
     if (!project) {
       return res.status(404).json({ 
         success: false, 
         message: 'Project not found' 
       });
     }
+    
+    // Delete associated image if it exists in uploads folder
+    if (project.image && project.image.startsWith('/uploads/')) {
+      deleteFile(project.image);
+    }
+    
+    await Project.findByIdAndDelete(req.params.id);
+    
     res.json({ 
       success: true, 
       message: 'Project deleted successfully',
