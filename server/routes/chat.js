@@ -1,44 +1,63 @@
 const express = require('express');
-const router = express.Router();
 const aiService = require('../services/aiService');
+const User = require('../models/User');
+const { asyncHandler } = require('../middleware/errorHandler');
+const { HTTP_STATUS } = require('../utils/constants');
 
-// POST /api/chat - Send message to AI
-router.post('/', async (req, res) => {
-  try {
-    const { message, history } = req.body;
+const router = express.Router();
 
-    // Validation
+// ---------------------------------------------------------------------------
+// @desc    Chat with AI about a user's portfolio
+// @route   POST /api/chat
+// @access  Public
+//
+// Body: { message: string, username: string }
+// The username tells the AI whose portfolio context to load.
+// ---------------------------------------------------------------------------
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    const { message, username } = req.body;
+
     if (!message || typeof message !== 'string') {
-      return res.status(400).json({
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
-        message: 'Message is required and must be a string'
+        message: 'Message is required and must be a string.',
+      });
+    }
+
+    if (!username || typeof username !== 'string') {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        message: 'Username is required to provide portfolio context.',
       });
     }
 
     if (!process.env.GEMINI_API_KEY) {
-      return res.status(500).json({
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
-        message: 'Gemini API key not configured'
+        message: 'AI service is not configured.',
       });
     }
 
-    const conversationHistory = history || [];
-    const response = await aiService.chat(message, conversationHistory);
+    // Resolve username to userId
+    const user = await User.findOne({ username: username.toLowerCase() });
 
-    res.json({
+    if (!user) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        message: 'User not found.',
+      });
+    }
+
+    const response = await aiService.chat(message, user._id);
+
+    res.status(HTTP_STATUS.OK).json({
       success: true,
       response,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-  } catch (error) {
-    console.error('Chat endpoint error:', error);
-    console.error('Error stack:', error.stack);
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Failed to process chat request',
-      error: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
-  }
-});
+  })
+);
 
 module.exports = router;

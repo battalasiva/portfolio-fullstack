@@ -1,7 +1,5 @@
 const { GoogleGenAI } = require('@google/genai');
-const Portfolio = require('../models/Portfolio');
-const Project = require('../models/Project');
-const { Contact } = require('../models/Contact');
+const { fetchFullPortfolio } = require('./portfolioService');
 
 class AIService {
   constructor() {
@@ -10,66 +8,63 @@ class AIService {
     });
   }
 
-  async getPortfolioContext() {
-    try {
-      const portfolio = await Portfolio.findOne();
-      const projects = await Project.find({ status: 'active' });
-      const contact = await Contact.findOne();
+  // Build context string from portfolio data
+  buildContext(data) {
+    const { profile, skills, experiences, projects, contact } = data;
 
-      if (!portfolio) {
-        return "Portfolio data is currently unavailable.";
-      }
+    if (!profile) {
+      return 'Portfolio data is currently unavailable.';
+    }
 
-      return `
+    return `
 You are an AI assistant for a portfolio website.
 
 PERSONAL INFO:
-- Name: ${portfolio?.name || 'Not available'}
-- Title: ${portfolio?.title || 'Not available'}
-- Bio: ${portfolio?.bio_one || ''} ${portfolio?.bio_two || ''} ${portfolio?.bio_three || ''}
+- Name: ${profile.name}
+- Title: ${profile.title}
+- Summary: ${profile.summary}
+- Location: ${profile.location || 'Not available'}
 
 SKILLS:
-${portfolio?.skills?.length
-          ? portfolio.skills
-              .map(
-                (skill) =>
-                  `- ${skill.category}: ${skill.technologies.join(', ')}`
-              )
-              .join('\n')
-          : 'No skills listed'}
+${
+  skills.length
+    ? skills.map((s) => `- ${s.category}: ${s.name} (${s.proficiency})`).join('\n')
+    : 'No skills listed'
+}
+
+EXPERIENCE:
+${
+  experiences.length
+    ? experiences
+        .map(
+          (exp) =>
+            `- ${exp.role} at ${exp.company}${exp.isCurrent ? ' (Current)' : ''}\n  ${exp.description || ''}`
+        )
+        .join('\n')
+    : 'No experience listed'
+}
 
 PROJECTS:
-${projects?.length
-          ? projects
-              .map(
-                (project) => `
-- ${project.title} (${project.subtitle || ''})
-  Description: ${project.description}
-  Technologies: ${project.technologies}
-  Links: ${
-    project.links
-      ? Object.entries(project.links)
-          .filter(([_, v]) => v)
-          .map(([k, v]) => `${k}: ${v}`)
-          .join(', ')
-      : 'No links available'
-  }
-`
-              )
-              .join('\n')
-          : 'No projects available'}
+${
+  projects.length
+    ? projects
+        .map(
+          (p) =>
+            `- ${p.title}${p.subtitle ? ` (${p.subtitle})` : ''}\n  ${p.description}\n  Tech: ${p.technologies}`
+        )
+        .join('\n')
+    : 'No projects available'
+}
 
 CONTACT:
 - Email: ${contact?.email || 'Not available'}
 - Phone: ${contact?.phone || 'Not available'}
 - Location: ${contact?.address || 'Not available'}
 - Social Links: ${
-        contact?.socialLinks?.length
-          ? contact.socialLinks
-              .map((link) => `${link.platform}: ${link.url}`)
-              .join(', ')
-          : 'Not available'
-      }
+      contact?.socialLinks?.length
+        ? contact.socialLinks.map((l) => `${l.platform}: ${l.url}`).join(', ')
+        : 'Not available'
+    }
 
 RULES:
 - Answer ONLY using the provided portfolio data
@@ -78,32 +73,21 @@ RULES:
 - If data not available, politely say so
 - Encourage contacting via provided contact details
 `;
-    } catch (error) {
-      console.error('Error building portfolio context:', error);
-      return 'Portfolio information is temporarily unavailable.';
-    }
   }
 
-  async chat(userMessage) {
+  async chat(userMessage, userId) {
     try {
-      const context = await this.getPortfolioContext();
+      const data = await fetchFullPortfolio(userId);
+      const context = this.buildContext(data);
 
-      const prompt = `
-${context}
-
-User Question:
-${userMessage}
-
-Provide a clear and professional answer:
-`;
+      const prompt = `${context}\n\nUser Question:\n${userMessage}\n\nProvide a clear and professional answer:`;
 
       const response = await this.ai.models.generateContent({
-        model: 'gemini-2.0-flash', // Recommended free + fast model
+        model: 'gemini-2.0-flash',
         contents: prompt,
       });
 
       return response.text;
-
     } catch (error) {
       console.error('Gemini Error:', error);
       throw new Error('Failed to generate AI response.');
