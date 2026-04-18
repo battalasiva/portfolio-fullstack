@@ -97,12 +97,11 @@ const renderHeader = (doc, profile, contact) => {
 
   doc.moveDown(0.3);
 
-  // Contact line: location | email | phone | website
+  // Contact line: location | email | phone
   const contactParts = [];
   if (profile.location) contactParts.push(profile.location);
-  if (contact?.email) contactParts.push(contact.email);
-  if (contact?.phone) contactParts.push(contact.phone);
-  if (profile.website) contactParts.push(profile.website);
+  if (profile.email) contactParts.push(profile.email);
+  if (profile.phone) contactParts.push(profile.phone);
 
   if (contactParts.length > 0) {
     doc
@@ -116,9 +115,9 @@ const renderHeader = (doc, profile, contact) => {
   }
 
   // Social links line
-  if (contact?.socialLinks?.length > 0) {
+  if (profile.socialLinks?.length > 0) {
     doc.moveDown(0.15);
-    const socialLine = contact.socialLinks
+    const socialLine = profile.socialLinks
       .map((link) => `${link.platform}: ${link.url}`)
       .join('  |  ');
 

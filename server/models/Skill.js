@@ -29,6 +29,10 @@ const skillSchema = new mongoose.Schema(
       enum: ['beginner', 'intermediate', 'advanced', 'expert'],
       default: 'intermediate',
     },
+    isPublished: {
+      type: Boolean,
+      default: true,
+    },
   },
   {
     timestamps: true,

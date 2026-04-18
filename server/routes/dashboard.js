@@ -22,6 +22,8 @@ const {
   getMessages, getMessage, updateMessage, deleteMessage,
 } = require('../controllers/contactController');
 const { downloadResume, previewResume } = require('../controllers/resumeController');
+const { createTogglePublish, createSingletonTogglePublish } = require('../controllers/togglePublishController');
+const { Contact } = require('../models/Contact');
 
 // Validators
 const {
@@ -59,6 +61,7 @@ router.get('/skills', getSkills);
 router.post('/skills', validateSkill, createSkill);
 router.put('/skills/:id', authorizeOwnership(Skill), validateSkill, updateSkill);
 router.delete('/skills/:id', authorizeOwnership(Skill), deleteSkill);
+router.patch('/skills/:id/publish', authorizeOwnership(Skill), createTogglePublish());
 
 // ---------------------------------------------------------------------------
 // Projects — /api/dashboard/projects
@@ -77,6 +80,7 @@ router.get('/experiences', getExperiences);
 router.post('/experiences', validateExperience, createExperience);
 router.put('/experiences/:id', authorizeOwnership(Experience), validateExperience, updateExperience);
 router.delete('/experiences/:id', authorizeOwnership(Experience), deleteExperience);
+router.patch('/experiences/:id/publish', authorizeOwnership(Experience), createTogglePublish());
 
 // ---------------------------------------------------------------------------
 // Education — /api/dashboard/education
@@ -85,6 +89,7 @@ router.get('/education', getEducation);
 router.post('/education', validateEducation, createEducation);
 router.put('/education/:id', authorizeOwnership(Education), validateEducation, updateEducation);
 router.delete('/education/:id', authorizeOwnership(Education), deleteEducation);
+router.patch('/education/:id/publish', authorizeOwnership(Education), createTogglePublish());
 
 // ---------------------------------------------------------------------------
 // Certifications — /api/dashboard/certifications
@@ -93,6 +98,7 @@ router.get('/certifications', getCertifications);
 router.post('/certifications', validateCertification, createCertification);
 router.put('/certifications/:id', authorizeOwnership(Certification), validateCertification, updateCertification);
 router.delete('/certifications/:id', authorizeOwnership(Certification), deleteCertification);
+router.patch('/certifications/:id/publish', authorizeOwnership(Certification), createTogglePublish());
 
 // ---------------------------------------------------------------------------
 // Contact — /api/dashboard/contact
@@ -100,6 +106,7 @@ router.delete('/certifications/:id', authorizeOwnership(Certification), deleteCe
 router.get('/contact', getContact);
 router.post('/contact', validateContact, createContact);
 router.put('/contact', validateContact, updateContact);
+router.patch('/contact/publish', createSingletonTogglePublish(Contact));
 
 // ---------------------------------------------------------------------------
 // Messages — /api/dashboard/messages

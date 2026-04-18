@@ -8,9 +8,9 @@ const Certification = require('../models/Certification');
 const { Contact } = require('../models/Contact');
 
 // ---------------------------------------------------------------------------
-// Field selections — only return what the frontend needs (no userId, __v)
+// Field selections for public API (no userId, no __v, includes isPublished)
 // ---------------------------------------------------------------------------
-const PROFILE_FIELDS = 'name title summary profileImage location website';
+const PROFILE_FIELDS = 'name title summary profileImage location phone email socialLinks personalDetails';
 const SKILL_FIELDS = 'name category proficiency';
 const PROJECT_FIELDS = 'title subtitle description technologies image links featured';
 const EXPERIENCE_FIELDS = 'company role description startDate endDate isCurrent location';
@@ -18,59 +18,47 @@ const EDUCATION_FIELDS = 'institution degree fieldOfStudy startDate endDate isCu
 const CERTIFICATION_FIELDS = 'title issuer issueDate expiryDate credentialId credentialUrl';
 const CONTACT_FIELDS = 'email phone address socialLinks';
 
-// ---------------------------------------------------------------------------
-// Resolve username → userId. Returns null if not found.
-// ---------------------------------------------------------------------------
 const resolveUser = async (username) => {
   return User.findOne({ username: username.toLowerCase() }).lean();
 };
 
 // ---------------------------------------------------------------------------
-// Individual section fetchers — each returns lean JS objects
+// Public fetchers — only return isPublished: true items
 // ---------------------------------------------------------------------------
 const fetchProfile = (userId) => {
   return Profile.findOne({ userId }).select(PROFILE_FIELDS).lean();
 };
 
 const fetchSkills = (userId) => {
-  return Skill.find({ userId }).select(SKILL_FIELDS).sort({ category: 1, name: 1 }).lean();
+  return Skill.find({ userId, isPublished: true }).select(SKILL_FIELDS).sort({ category: 1, name: 1 }).lean();
 };
 
 const fetchProjects = (userId) => {
   return Project.find({ userId, status: 'active', isPublished: true })
-    .select(PROJECT_FIELDS)
-    .sort({ featured: -1, createdAt: -1 })
-    .lean();
+    .select(PROJECT_FIELDS).sort({ featured: -1, createdAt: -1 }).lean();
 };
 
 const fetchExperiences = (userId) => {
-  return Experience.find({ userId })
-    .select(EXPERIENCE_FIELDS)
-    .sort({ isCurrent: -1, startDate: -1 })
-    .lean();
+  return Experience.find({ userId, isPublished: true })
+    .select(EXPERIENCE_FIELDS).sort({ isCurrent: -1, startDate: -1 }).lean();
 };
 
 const fetchEducation = (userId) => {
-  return Education.find({ userId })
-    .select(EDUCATION_FIELDS)
-    .sort({ isCurrent: -1, startDate: -1 })
-    .lean();
+  return Education.find({ userId, isPublished: true })
+    .select(EDUCATION_FIELDS).sort({ isCurrent: -1, startDate: -1 }).lean();
 };
 
 const fetchCertifications = (userId) => {
-  return Certification.find({ userId })
-    .select(CERTIFICATION_FIELDS)
-    .sort({ issueDate: -1 })
-    .lean();
+  return Certification.find({ userId, isPublished: true })
+    .select(CERTIFICATION_FIELDS).sort({ issueDate: -1 }).lean();
 };
 
 const fetchContact = (userId) => {
-  return Contact.findOne({ userId }).select(CONTACT_FIELDS).lean();
+  return Contact.findOne({ userId, isPublished: true }).select(CONTACT_FIELDS).lean();
 };
 
 // ---------------------------------------------------------------------------
-// Combined fetch — all sections in parallel. Single DB round-trip.
-// Used by: full portfolio endpoint, resume generation, AI context.
+// Combined fetch — all sections in parallel
 // ---------------------------------------------------------------------------
 const fetchFullPortfolio = async (userId) => {
   const [profile, skills, projects, experiences, education, certifications, contact] =
@@ -88,13 +76,7 @@ const fetchFullPortfolio = async (userId) => {
 };
 
 module.exports = {
-  resolveUser,
-  fetchProfile,
-  fetchSkills,
-  fetchProjects,
-  fetchExperiences,
-  fetchEducation,
-  fetchCertifications,
-  fetchContact,
-  fetchFullPortfolio,
+  resolveUser, fetchProfile, fetchSkills, fetchProjects,
+  fetchExperiences, fetchEducation, fetchCertifications,
+  fetchContact, fetchFullPortfolio,
 };

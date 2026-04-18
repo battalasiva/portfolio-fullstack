@@ -21,11 +21,48 @@ const validateProfile = [
     .trim()
     .notEmpty()
     .withMessage('Summary is required')
-    .isLength({ max: 2000 })
-    .withMessage('Summary cannot exceed 2000 characters'),
+    .isLength({ max: 3000 })
+    .withMessage('Summary cannot exceed 3000 characters'),
   body('profileImage').optional({ nullable: true }).trim(),
   body('location').optional({ nullable: true }).trim(),
-  body('website').optional({ nullable: true }).trim(),
+  body('phone').optional({ nullable: true }).trim(),
+  body('email').optional({ nullable: true }).trim(),
+
+  // Social links
+  body('socialLinks')
+    .optional()
+    .isArray()
+    .withMessage('Social links must be an array'),
+  body('socialLinks.*.platform')
+    .if(body('socialLinks').exists())
+    .trim()
+    .notEmpty()
+    .withMessage('Platform name is required'),
+  body('socialLinks.*.url')
+    .if(body('socialLinks').exists())
+    .trim()
+    .notEmpty()
+    .withMessage('URL is required'),
+
+  // Personal details
+  body('personalDetails')
+    .optional()
+    .isArray()
+    .withMessage('Personal details must be an array'),
+  body('personalDetails.*.label')
+    .if(body('personalDetails').exists())
+    .trim()
+    .notEmpty()
+    .withMessage('Detail label is required'),
+  body('personalDetails.*.value')
+    .if(body('personalDetails').exists())
+    .trim()
+    .notEmpty()
+    .withMessage('Detail value is required'),
+  body('personalDetails.*.link')
+    .optional({ nullable: true })
+    .trim(),
+
   handleValidationErrors,
 ];
 
