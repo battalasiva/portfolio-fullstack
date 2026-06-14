@@ -254,6 +254,43 @@ const validateContactMessage = [
   handleValidationErrors,
 ];
 
+// ---------------------------------------------------------------------------
+// Language
+// ---------------------------------------------------------------------------
+const validateLanguage = [
+  body('name').trim().notEmpty().withMessage('Language name is required').isLength({ max: 100 }),
+  body('proficiency').optional().isIn(['native', 'fluent', 'advanced', 'intermediate', 'basic']),
+  handleValidationErrors,
+];
+
+// ---------------------------------------------------------------------------
+// Interest
+// ---------------------------------------------------------------------------
+const validateInterest = [
+  body('name').trim().notEmpty().withMessage('Interest name is required').isLength({ max: 100 }),
+  body('icon').optional({ nullable: true }).trim(),
+  handleValidationErrors,
+];
+
+// ---------------------------------------------------------------------------
+// Custom Section
+// ---------------------------------------------------------------------------
+const validateCustomSection = [
+  body('title').trim().notEmpty().withMessage('Section title is required').isLength({ max: 100 }),
+  handleValidationErrors,
+];
+
+const validateCustomSectionItem = [
+  body('title').optional().trim().isLength({ max: 200 }),
+  body('subtitle').optional({ nullable: true }).trim(),
+  body('description').optional({ nullable: true }),
+  body('startDate').optional({ nullable: true }).isISO8601().withMessage('Invalid date'),
+  body('endDate').optional({ nullable: true }).isISO8601().withMessage('Invalid date'),
+  body('isCurrent').optional().isBoolean(),
+  body('url').optional({ nullable: true }).trim(),
+  handleValidationErrors,
+];
+
 module.exports = {
   validateProfile,
   validateSkill,
@@ -263,4 +300,8 @@ module.exports = {
   validateCertification,
   validateContact,
   validateContactMessage,
+  validateLanguage,
+  validateInterest,
+  validateCustomSection,
+  validateCustomSectionItem,
 };

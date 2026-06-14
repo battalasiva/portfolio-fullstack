@@ -3,18 +3,12 @@ const { fetchFullPortfolio } = require('./portfolioService');
 
 class AIService {
   constructor() {
-    this.ai = new GoogleGenAI({
-      apiKey: process.env.GEMINI_API_KEY,
-    });
+    this.ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   }
 
-  // Build context string from portfolio data
   buildContext(data) {
-    const { profile, skills, experiences, projects, contact } = data;
-
-    if (!profile) {
-      return 'Portfolio data is currently unavailable.';
-    }
+    const { profile, skills, experiences, projects, languages, interests, customSections, contact } = data;
+    if (!profile) return 'Portfolio data is currently unavailable.';
 
     return `
 You are an AI assistant for a portfolio website.
@@ -26,52 +20,31 @@ PERSONAL INFO:
 - Location: ${profile.location || 'Not available'}
 
 SKILLS:
-${
-  skills.length
-    ? skills.map((s) => `- ${s.category}: ${s.name} (${s.proficiency})`).join('\n')
-    : 'No skills listed'
-}
+${skills.length ? skills.map((s) => `- ${s.category}: ${s.name} (${s.proficiency})`).join('\n') : 'No skills listed'}
 
 EXPERIENCE:
-${
-  experiences.length
-    ? experiences
-        .map(
-          (exp) =>
-            `- ${exp.role} at ${exp.company}${exp.isCurrent ? ' (Current)' : ''}\n  ${exp.description || ''}`
-        )
-        .join('\n')
-    : 'No experience listed'
-}
+${experiences.length ? experiences.map((e) => `- ${e.role} at ${e.company}${e.isCurrent ? ' (Current)' : ''}\n  ${e.description || ''}`).join('\n') : 'No experience'}
 
 PROJECTS:
-${
-  projects.length
-    ? projects
-        .map(
-          (p) =>
-            `- ${p.title}${p.subtitle ? ` (${p.subtitle})` : ''}\n  ${p.description}\n  Tech: ${p.technologies}`
-        )
-        .join('\n')
-    : 'No projects available'
-}
+${projects.length ? projects.map((p) => `- ${p.title}\n  ${p.description}\n  Tech: ${p.technologies}`).join('\n') : 'No projects'}
+
+LANGUAGES:
+${languages?.length ? languages.map((l) => `- ${l.name} (${l.proficiency})`).join('\n') : 'Not specified'}
+
+INTERESTS:
+${interests?.length ? interests.map((i) => i.name).join(', ') : 'Not specified'}
+
+${customSections?.length ? customSections.map((s) => `${s.title.toUpperCase()}:\n${s.items.map((i) => `- ${i.title}${i.subtitle ? ` at ${i.subtitle}` : ''}\n  ${i.description || ''}`).join('\n')}`).join('\n\n') : ''}
 
 CONTACT:
 - Email: ${contact?.email || 'Not available'}
 - Phone: ${contact?.phone || 'Not available'}
-- Location: ${contact?.address || 'Not available'}
-- Social Links: ${
-      contact?.socialLinks?.length
-        ? contact.socialLinks.map((l) => `${l.platform}: ${l.url}`).join(', ')
-        : 'Not available'
-    }
 
 RULES:
 - Answer ONLY using the provided portfolio data
 - Do NOT make up information
 - Be professional, friendly, and concise
 - If data not available, politely say so
-- Encourage contacting via provided contact details
 `;
   }
 
@@ -79,14 +52,8 @@ RULES:
     try {
       const data = await fetchFullPortfolio(userId);
       const context = this.buildContext(data);
-
       const prompt = `${context}\n\nUser Question:\n${userMessage}\n\nProvide a clear and professional answer:`;
-
-      const response = await this.ai.models.generateContent({
-        model: 'gemini-2.0-flash',
-        contents: prompt,
-      });
-
+      const response = await this.ai.models.generateContent({ model: 'gemini-2.0-flash', contents: prompt });
       return response.text;
     } catch (error) {
       console.error('Gemini Error:', error);
